@@ -64,7 +64,7 @@ func (a *agent) Receive(ctx *actor.Context) error {
 		} else {
 			a.address = msg.Ctx.Request().RemoteAddr[0:lastColonIndex]
 		}
-	case sproto.KillContainer:
+	case sproto.KillTaskContainer:
 		ctx.Log().Infof("killing container id: %s", msg.ContainerID)
 		killMsg := aproto.SignalContainer{
 			ContainerID: msg.ContainerID, Signal: syscall.SIGKILL,
@@ -165,24 +165,25 @@ func (a *agent) containerStateChanged(ctx *actor.Context, sc aproto.ContainerSta
 	task, ok := a.containers[sc.Container.ID]
 	check.Panic(check.True(ok, "container not assigned to agent: container %s", sc.Container.ID))
 
+	rsc := sproto.TaskContainerStateChanged{Container: sc.Container}
 	switch sc.Container.State {
 	case container.Running:
 		if sc.ContainerStarted.ProxyAddress == "" {
 			sc.ContainerStarted.ProxyAddress = a.address
 		}
+		rsc.ContainerStarted = &sproto.TaskContainerStarted{
+			Addresses: sc.ContainerStarted.Addresses(),
+		}
 	case container.Terminated:
 		ctx.Log().Infof("stopped container id: %s", sc.Container.ID)
 		delete(a.containers, sc.Container.ID)
-	}
-
-	rsc := sproto.ContainerStateChanged{
-		Container:        sc.Container,
-		ContainerStarted: sc.ContainerStarted,
-		ContainerStopped: sc.ContainerStopped,
+		rsc.ContainerStopped = &sproto.TaskContainerStopped{
+			ContainerStopped: *sc.ContainerStopped,
+		}
 	}
 
 	ctx.Tell(task, rsc)
-	ctx.Tell(a.slots, rsc)
+	ctx.Tell(a.slots, sc)
 }
 
 func (a *agent) summarize(ctx *actor.Context) AgentSummary {

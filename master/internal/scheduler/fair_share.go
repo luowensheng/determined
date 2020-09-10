@@ -27,9 +27,9 @@ type groupState struct {
 	offered int
 
 	// reqs contains the contents of both pendingReqs and assignedReqs.
-	reqs         []*AddTask
-	pendingReqs  []*AddTask
-	assignedReqs []*AddTask
+	reqs         []*AllocateRequest
+	pendingReqs  []*AllocateRequest
+	assignedReqs []*AllocateRequest
 }
 
 func (g groupState) String() string {
@@ -42,9 +42,9 @@ func (g groupState) String() string {
 }
 
 func (f *fairShare) Schedule(rp *DefaultRP) {
-	for it := rp.reqList.iterator(); it.next(); {
+	for it := rp.taskList.iterator(); it.next(); {
 		req := it.value()
-		assignments := rp.reqList.GetAssignments(req.Handler)
+		assignments := rp.taskList.GetAssignments(req.Handler)
 		if req.SlotsNeeded == 0 && assignments == nil {
 			rp.assignResources(req)
 		}
@@ -85,7 +85,7 @@ func calculateGroupStates(rp *DefaultRP, capacities map[string]int) map[string][
 	// Demand is calculated by summing the slots needed for each schedulable task.
 	states := make(map[string][]*groupState)
 	groupMapping := make(map[*group]*groupState)
-	for it := rp.reqList.iterator(); it.next(); {
+	for it := rp.taskList.iterator(); it.next(); {
 		req := it.value()
 		if req.SlotsNeeded == 0 || req.SlotsNeeded > capacities[req.Label] {
 			continue
@@ -105,12 +105,12 @@ func calculateGroupStates(rp *DefaultRP, capacities map[string]int) map[string][
 	for _, group := range states {
 		for _, state := range group {
 			for _, req := range state.reqs {
-				assigned := rp.reqList.GetAssignments(req.Handler)
+				assigned := rp.taskList.GetAssignments(req.Handler)
 				state.slotDemand += req.SlotsNeeded
 				switch {
-				case assigned == nil || len(assigned.Assignments) == 0:
+				case assigned == nil || len(assigned.Allocations) == 0:
 					state.pendingReqs = append(state.pendingReqs, req)
-				case len(assigned.Assignments) > 0:
+				case len(assigned.Allocations) > 0:
 					state.assignedReqs = append(state.assignedReqs, req)
 					state.activeSlots += req.SlotsNeeded
 				}
@@ -217,7 +217,7 @@ func allocateSlotOffers(states []*groupState, capacity int) {
 	}
 }
 
-func calculateSmallestAllocatableTask(state *groupState) (smallest *AddTask) {
+func calculateSmallestAllocatableTask(state *groupState) (smallest *AllocateRequest) {
 	for _, req := range state.pendingReqs {
 		if smallest == nil || req.SlotsNeeded < smallest.SlotsNeeded {
 			smallest = req

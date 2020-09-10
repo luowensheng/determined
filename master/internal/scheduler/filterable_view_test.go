@@ -13,9 +13,9 @@ import (
 	"github.com/determined-ai/determined/master/pkg/actor"
 )
 
-func (d *DefaultRP) addAssignedTask(req *AddTask, assigned *ResourceAssigned) {
-	d.reqList.AddTask(req)
-	d.reqList.SetAssignments(req.Handler, assigned)
+func (d *DefaultRP) addAssignedTask(req *AllocateRequest, assigned *ResourcesAllocated) {
+	d.taskList.AddTask(req)
+	d.taskList.SetAssignments(req.Handler, assigned)
 }
 
 func (d *DefaultRP) addAgent(
@@ -166,17 +166,17 @@ func addTask(
 	taskID string,
 	numAssigned int,
 	slotsNeeded int,
-) *AddTask {
-	req := &AddTask{
+) *AllocateRequest {
+	req := &AllocateRequest{
 		ID:           TaskID(taskID),
 		Group:        newGroup(t, system, taskID+"-group"),
 		Handler:      newGroup(t, system, taskID+"-handler"),
 		SlotsNeeded:  slotsNeeded,
 		CanTerminate: true,
 	}
-	assigned := &ResourceAssigned{Assignments: []Assignment{}}
+	assigned := &ResourcesAllocated{ID: req.ID, Allocations: []Allocation{}}
 	for i := 0; i < numAssigned; i++ {
-		assigned.Assignments = append(assigned.Assignments, containerAssignment{})
+		assigned.Allocations = append(assigned.Allocations, containerAssignment{})
 	}
 	d.addAssignedTask(req, assigned)
 	return req
@@ -304,8 +304,9 @@ func TestTaskStateChange(t *testing.T) {
 	assert.Equal(t, 6, len(snapshot1.ConnectedAgents))
 	assert.Check(t, updated)
 
-	c.reqList.SetAssignments(pendingTask.Handler, &ResourceAssigned{
-		Assignments: make([]Assignment, 1),
+	c.taskList.SetAssignments(pendingTask.Handler, &ResourcesAllocated{
+		ID:          pendingTask.ID,
+		Allocations: make([]Allocation, 1),
 	})
 
 	snapshot2, updated := c.provisionerView.Update(c)

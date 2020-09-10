@@ -40,11 +40,11 @@ func (summary1 *TaskSummary) equals(summary2 *TaskSummary) bool {
 	return true
 }
 
-func newTaskSummary(request *AddTask, assigned *ResourceAssigned) TaskSummary {
+func newTaskSummary(request *AllocateRequest, assigned *ResourcesAllocated) TaskSummary {
 	// Summary returns a new immutable view of the task state.
 	containerSummaries := make([]ContainerSummary, 0)
 	if assigned != nil {
-		for _, c := range assigned.Assignments {
+		for _, c := range assigned.Allocations {
 			containerSummaries = append(containerSummaries, c.Summary())
 		}
 	}

@@ -6,8 +6,6 @@ import (
 
 	"github.com/determined-ai/determined/master/pkg/tasks"
 
-	"github.com/google/uuid"
-
 	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/labstack/echo"
 
@@ -106,7 +104,7 @@ func (c *commandManager) newCommand(req *commandRequest) *command {
 	setPodSpec(&config, c.defaultTaskSpec.TaskContainerDefaults)
 
 	return &command{
-		taskID:    scheduler.TaskID(uuid.New().String()),
+		taskID:    scheduler.NewTaskID(),
 		config:    config,
 		userFiles: req.UserFiles,
 

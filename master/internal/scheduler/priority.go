@@ -15,7 +15,7 @@ func NewPriorityScheduler() Scheduler {
 func (p *priorityScheduler) Schedule(rp *DefaultRP) {
 	var states []*groupState
 	groupMapping := make(map[*group]*groupState)
-	for it := rp.reqList.iterator(); it.next(); {
+	for it := rp.taskList.iterator(); it.next(); {
 		req := it.value()
 		group := rp.groups[req.Group]
 		state, ok := groupMapping[group]
@@ -24,9 +24,9 @@ func (p *priorityScheduler) Schedule(rp *DefaultRP) {
 			states = append(states, state)
 			groupMapping[group] = state
 		}
-		assigned := rp.reqList.GetAssignments(req.Handler)
+		assigned := rp.taskList.GetAssignments(req.Handler)
 		switch {
-		case assigned == nil || len(assigned.Assignments) == 0:
+		case assigned == nil || len(assigned.Allocations) == 0:
 			state.pendingReqs = append(state.pendingReqs, req)
 		default:
 			state.activeSlots += req.SlotsNeeded

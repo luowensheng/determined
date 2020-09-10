@@ -60,7 +60,7 @@ func (s *slot) Receive(ctx *actor.Context) error {
 		check.Panic(check.True(s.enabled.Enabled(), "container assigned but slot is not enabled"))
 		check.Panic(check.True(s.container == nil, "container already assigned to slot"))
 		s.container = &msg.Container
-	case sproto.ContainerStateChanged:
+	case aproto.ContainerStateChanged:
 		check.Panic(check.Equal(s.container.ID, msg.Container.ID, "Invalid container id sent to slot"))
 		s.container = &msg.Container
 		if msg.Container.State == container.Terminated {
@@ -123,7 +123,7 @@ func (s *slot) patch(ctx *actor.Context) {
 		remove := sproto.RemoveDevice{DeviceID: s.deviceID(ctx)}
 		ctx.Tell(s.cluster, remove)
 		if s.container != nil {
-			ctx.Tell(remove.Agent, sproto.KillContainer{ContainerID: s.container.ID})
+			ctx.Tell(remove.Agent, sproto.KillTaskContainer{ContainerID: s.container.ID})
 		}
 	}
 }

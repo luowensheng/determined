@@ -11,8 +11,6 @@ import (
 
 	"github.com/determined-ai/determined/master/pkg/tasks"
 
-	"github.com/google/uuid"
-
 	petname "github.com/dustinkirkland/golang-petname"
 	"github.com/labstack/echo"
 	"github.com/pkg/errors"
@@ -176,7 +174,7 @@ func (n *notebookManager) handleAPIRequest(ctx *actor.Context, apiCtx echo.Conte
 
 func (n *notebookManager) newNotebook(req *commandRequest) (*command, error) {
 	config := req.Config
-	taskID := scheduler.TaskID(uuid.New().String())
+	taskID := scheduler.NewTaskID()
 
 	// Postprocess the config. Add Jupyter and configuration to the container.
 
